@@ -2,6 +2,7 @@ package ui;
 
 import controller.SaveController;
 import model.GameSave;
+import util.ImageScanner;
 import util.ImageUtil;
 import util.ResourcePathUtil;
 
@@ -162,31 +163,34 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
 
     // 初始化随机图片序列
     private void initRandomImageNumbers() {
+        // 使用ImageScanner自动扫描图片编号
+        ImageScanner.ImageNumbers imageNumbers = ImageScanner.scanAllThemes();
+        
         // 动物图片
-        animalNumbers = new ArrayList<>();
-        for (int i = 1; i <= 8; i++) {
-            animalNumbers.add(i);
+        animalNumbers = new ArrayList<>(imageNumbers.getAnimalNumbers());
+        if (animalNumbers.isEmpty()) {
+            animalNumbers.add(1);
         }
         Collections.shuffle(animalNumbers);
 
         // 美女图片
-        girlNumbers = new ArrayList<>();
-        for (int i = 1; i <= 12; i++) {
-            girlNumbers.add(i);
+        girlNumbers = new ArrayList<>(imageNumbers.getGirlNumbers());
+        if (girlNumbers.isEmpty()) {
+            girlNumbers.add(1);
         }
         Collections.shuffle(girlNumbers);
 
         // 运动图片
-        sportNumbers = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
-            sportNumbers.add(i);
+        sportNumbers = new ArrayList<>(imageNumbers.getSportNumbers());
+        if (sportNumbers.isEmpty()) {
+            sportNumbers.add(1);
         }
         Collections.shuffle(sportNumbers);
 
         // 人物图片
-        personNumbers = new ArrayList<>();
-        for (int i = 1; i <= 2; i++) {
-            personNumbers.add(i);
+        personNumbers = new ArrayList<>(imageNumbers.getPersonNumbers());
+        if (personNumbers.isEmpty()) {
+            personNumbers.add(1);
         }
         Collections.shuffle(personNumbers);
     }
