@@ -7,20 +7,15 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-// 配置工具类
+// 配置工具：统一读取 dev/prod 配置并解析路径。
 public class ConfigUtil {
-    // 配置对象
     private static final Properties props;
-    // 运行目录
     private static final String RUN_DIR;
-    // AppData目录
     private static final String APP_DATA_DIR;
 
-    // 静态初始化 - 根据模式加载配置
     static {
         props = new Properties();
-        
-        // 先读取主配置获取模式
+
         String mode = "dev";
         try (InputStream is = ConfigUtil.class.getClassLoader().getResourceAsStream("config.properties")) {
             if (is != null) {
@@ -31,8 +26,7 @@ public class ConfigUtil {
         } catch (IOException e) {
             System.err.println("加载主配置失败: " + e.getMessage());
         }
-        
-        // 根据模式加载对应配置文件
+
         String configFile = "config-" + mode + ".properties";
         try (InputStream is = ConfigUtil.class.getClassLoader().getResourceAsStream(configFile)) {
             if (is != null) {
@@ -44,52 +38,54 @@ public class ConfigUtil {
         } catch (IOException e) {
             System.err.println("加载配置文件失败: " + e.getMessage());
         }
-        
-        // 获取运行目录
+
         RUN_DIR = System.getProperty("user.dir");
-        
-        // 获取AppData目录
+
         String appData = System.getenv("APPDATA");
         if (appData != null) {
             APP_DATA_DIR = appData + File.separator + "JigsawPuzzles";
-            // 确保目录存在
             new File(APP_DATA_DIR).mkdirs();
         } else {
             APP_DATA_DIR = RUN_DIR;
         }
     }
 
-    // 获取配置值（解析占位符）
     public static String get(String key) {
         String value = props.getProperty(key, "");
         if (value.isEmpty()) {
             return "";
         }
-        // 解析 ${APPDATA} 占位符
+
         if (value.startsWith("${APPDATA}")) {
             value = value.replace("${APPDATA}", APP_DATA_DIR);
             return new File(value).getAbsolutePath();
         }
-        // 相对路径，拼接运行目录
-        return new File(RUN_DIR, value).getAbsolutePath();
+
+        String normalizedValue = value.replace("/", File.separator).replace("\\", File.separator);
+        String gamePrefix = "Game" + File.separator;
+
+        // 兼容两种运行目录：
+        // 1) 仓库根目录运行（user.dir=.../JigsawPuzzles）
+        // 2) Game 模块目录运行（user.dir=.../JigsawPuzzles/Game）
+        if (RUN_DIR.endsWith(File.separator + "Game") && normalizedValue.startsWith(gamePrefix)) {
+            return new File(RUN_DIR, normalizedValue.substring(gamePrefix.length())).getAbsolutePath();
+        }
+
+        return new File(RUN_DIR, normalizedValue).getAbsolutePath();
     }
 
-    // 获取配置值（带默认值）
     public static String get(String key, String defaultValue) {
         return props.getProperty(key, defaultValue);
     }
 
-    // 用户信息文件路径
     public static String getUserInfoPath() {
         return get("data.userinfo");
     }
 
-    // 存档目录
     public static String getSaveDir() {
         return get("data.save.dir");
     }
 
-    // 资源图片目录
     public static String getImageDir() {
         return get("resources.image.dir");
     }

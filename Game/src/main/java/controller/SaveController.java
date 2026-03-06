@@ -1,70 +1,56 @@
 package controller;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import model.GameSave;
-import util.ConfigUtil;
+import model.service.SaveService;
 
-import java.io.File;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
-// 存档控制器
+// 存档控制器：保留实例接口并兼容旧的静态调用入口。
 public class SaveController {
+    private static final SaveService DEFAULT_SAVE_SERVICE = new SaveService();
 
-    // 保存游戏
-    public static boolean saveGame(String username, int gridSize, int[][] puzzleState, 
-                                   int emptyX, int emptyY, int stepCount, 
+    private final SaveService saveService;
+
+    public SaveController() {
+        this(new SaveService());
+    }
+
+    public SaveController(SaveService saveService) {
+        this.saveService = saveService;
+    }
+
+    public boolean save(String username, int gridSize, int[][] puzzleState,
+                        int emptyX, int emptyY, int stepCount,
+                        String imagePath, int imageNum) {
+        return saveService.saveGame(username, gridSize, puzzleState, emptyX, emptyY, stepCount, imagePath, imageNum);
+    }
+
+    public GameSave load(String username) {
+        return saveService.loadGame(username);
+    }
+
+    public boolean has(String username) {
+        return saveService.hasSave(username);
+    }
+
+    public boolean delete(String username) {
+        return saveService.deleteSave(username);
+    }
+
+    // 向后兼容：旧 UI 仍可通过静态方法访问存档能力。
+    public static boolean saveGame(String username, int gridSize, int[][] puzzleState,
+                                   int emptyX, int emptyY, int stepCount,
                                    String imagePath, int imageNum) {
-        try {
-            // 创建存档对象
-            String saveTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            GameSave save = new GameSave(username, gridSize, puzzleState, emptyX, emptyY, 
-                                         stepCount, imagePath, imageNum, saveTime);
-            
-            // 保存为JSON文件（按用户名命名）
-            String filePath = ConfigUtil.getSaveDir() + File.separator + username + ".json";
-            FileUtil.writeUtf8String(JSONUtil.toJsonPrettyStr(save), filePath);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return DEFAULT_SAVE_SERVICE.saveGame(username, gridSize, puzzleState, emptyX, emptyY, stepCount, imagePath, imageNum);
     }
 
-    // 读取存档
     public static GameSave loadGame(String username) {
-        try {
-            String filePath = ConfigUtil.getSaveDir() + File.separator + username + ".json";
-            File file = new File(filePath);
-            if (!file.exists()) {
-                return null;
-            }
-            String json = FileUtil.readUtf8String(filePath);
-            if (StrUtil.isBlank(json)) {
-                return null;
-            }
-            return JSONUtil.toBean(json, GameSave.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return DEFAULT_SAVE_SERVICE.loadGame(username);
     }
 
-    // 检查是否有存档
     public static boolean hasSave(String username) {
-        String filePath = ConfigUtil.getSaveDir() + File.separator + username + ".json";
-        return new File(filePath).exists();
+        return DEFAULT_SAVE_SERVICE.hasSave(username);
     }
 
-    // 删除存档
     public static boolean deleteSave(String username) {
-        try {
-            String filePath = ConfigUtil.getSaveDir() + File.separator + username + ".json";
-            return FileUtil.del(filePath);
-        } catch (Exception e) {
-            return false;
-        }
+        return DEFAULT_SAVE_SERVICE.deleteSave(username);
     }
 }
