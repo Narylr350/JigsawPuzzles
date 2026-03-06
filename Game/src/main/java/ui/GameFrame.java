@@ -22,14 +22,6 @@ import java.util.Random;
 
 // 游戏主界面
 public class GameFrame extends BaseFrame implements KeyListener, ActionListener {
-    // 难度配置：网格大小 -> 块尺寸
-    private static final int[][] DIFFICULTY_CONFIG = {
-        {2, 210},  // 2x2 非常简单
-        {3, 140},  // 3x3 轻松
-        {4, 105},  // 4x4 难
-        {5, 84}    // 5x5 非常困难
-    };
-
     // 当前难度
     private int gridSize = 4;      // 网格大小
     private int pieceSize = 105;   // 拼图块尺寸
@@ -59,6 +51,7 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
     String pathGirl = "image/girl/girl";
     String pathSport = "image/sport/sport";
     String pathPerson = "image/person/person";
+    String pathPokemon = "image/pokemon/pokemon";
     String path = pathAnimal;
 
     // 图片组件
@@ -74,6 +67,7 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
     JMenuItem animal = new JMenuItem("动物");
     JMenuItem sport = new JMenuItem("运动");
     JMenuItem person = new JMenuItem("人");
+    JMenuItem pokemon = new JMenuItem("pokemon");
     // 步数标签
     JLabel stepLabel = new JLabel("步数: 0");
 
@@ -106,10 +100,12 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
     private List<Integer> girlNumbers;
     private List<Integer> sportNumbers;
     private List<Integer> personNumbers;
+    private List<Integer> pokemonNumbers;
     private int personIndex = 0;
     private int animalIndex = 0;
     private int girlIndex = 0;
     private int sportIndex = 0;
+    private int pokemonIndex = 0;
 
     // 默认构造方法
     public GameFrame() {
@@ -193,6 +189,12 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
             personNumbers.add(1);
         }
         Collections.shuffle(personNumbers);
+        // pokemon图片
+        pokemonNumbers = new ArrayList<>(imageNumbers.getPokemonNumbers());
+        if (pokemonNumbers.isEmpty()) {
+            pokemonNumbers.add(1);
+        }
+        Collections.shuffle(pokemonNumbers);
     }
 
     // 获取下一个人物图片编号
@@ -229,6 +231,15 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
             sportIndex = 0;
         }
         return sportNumbers.get(sportIndex++);
+    }
+
+    // 获取下一个pokemon图片编号
+    private int getNextPokemonNumber() {
+        if (pokemonIndex >= pokemonNumbers.size()) {
+            Collections.shuffle(pokemonNumbers);
+            pokemonIndex = 0;
+        }
+        return pokemonNumbers.get(pokemonIndex++);
     }
 
     // 初始化拼图数据
@@ -396,6 +407,7 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
         changeImage.add(animal);
         changeImage.add(sport);
         changeImage.add(person);
+        changeImage.add(pokemon);
 
         // 添加难度选项
         difficultyMenu.add(diff2x2);
@@ -423,6 +435,7 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
         animal.addActionListener(this);
         sport.addActionListener(this);
         person.addActionListener(this);
+        pokemon.addActionListener(this);
 
         diff2x2.addActionListener(this);
         diff3x3.addActionListener(this);
@@ -583,6 +596,13 @@ public class GameFrame extends BaseFrame implements KeyListener, ActionListener 
             randomNum = getNextPersonNumber();
             stepCount = 0;
             path = pathPerson;
+            initData();
+            loadImageCache();
+            initImage();
+        } else if (source == pokemon) {
+            randomNum = getNextPokemonNumber();
+            stepCount = 0;
+            path = pathPokemon;
             initData();
             loadImageCache();
             initImage();

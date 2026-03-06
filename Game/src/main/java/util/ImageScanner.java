@@ -54,7 +54,8 @@ public class ImageScanner {
                 scanImageNumbers("image/animal"),
                 scanImageNumbers("image/girl"),
                 scanImageNumbers("image/sport"),
-                scanImageNumbers("image/person")
+                scanImageNumbers("image/person"),
+                scanImageNumbers("image/pokemon")
         );
     }
 
@@ -64,13 +65,15 @@ public class ImageScanner {
         private final List<Integer> girlNumbers;
         private final List<Integer> sportNumbers;
         private final List<Integer> personNumbers;
+        private final List<Integer> pokemonNumbers;
 
         public ImageNumbers(List<Integer> animalNumbers, List<Integer> girlNumbers,
-                            List<Integer> sportNumbers, List<Integer> personNumbers) {
+                            List<Integer> sportNumbers, List<Integer> personNumbers, List<Integer> pokemonNumbers) {
             this.animalNumbers = animalNumbers;
             this.girlNumbers = girlNumbers;
             this.sportNumbers = sportNumbers;
             this.personNumbers = personNumbers;
+            this.pokemonNumbers = pokemonNumbers;
         }
 
         public List<Integer> getAnimalNumbers() {
@@ -87,6 +90,10 @@ public class ImageScanner {
 
         public List<Integer> getPersonNumbers() {
             return personNumbers;
+        }
+
+        public List<Integer> getPokemonNumbers() {
+            return pokemonNumbers;
         }
     }
 }

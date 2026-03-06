@@ -35,6 +35,6 @@ public class ImageUtil {
 
     // 创建默认的白色拼图图片(105*105像素)
     public static ImageIcon createDefaultPuzzleImage() {
-        return createColorImage(105, 105, 243, 220, 123);
+        return createColorImage(250, 250, 255,255,255);//243, 220, 123
     }
 }
