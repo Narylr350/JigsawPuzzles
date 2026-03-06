@@ -1,211 +1,141 @@
-# JigsawPuzzles - 拼图游戏
+# JigsawPuzzles
 
-一个基于 Java Swing 的拼图游戏，采用 MVC 架构设计，实现了完整的用户系统、多难度拼图和存档功能。
+一个基于 Java Swing 的拼图游戏项目，包含用户登录注册、动态主题图片、难度切换、进度存档与读取等完整流程。
 
-## 功能特性
+## 项目定位
 
-### 游戏功能
-- **多难度支持**：2x2、3x3、4x4、5x5 四种难度
-- **多主题图片**：动物、美女、运动、人物四大主题
-- **智能图片加载**：自动扫描图片目录，动态识别可用图片
-- **可解性保证**：基于逆序数算法验证拼图可解性
-- **双操作模式**：支持键盘方向键和鼠标点击
+本项目聚焦两个目标：
+- 提供完整可玩的桌面拼图体验（交互、存档、主题切换）
+- 展示清晰的业务逻辑设计（可解性判断、状态流转、数据持久化）
 
-### 用户系统
-- 注册/登录功能
-- 验证码验证
-- MD5 密码加密
-- JSON 数据持久化
+## 功能概览
 
-### 存档系统
-- 保存/读取游戏进度
-- 每用户独立存档
-- 记录拼图状态、步数、时间戳
+- 难度等级：`2x2 / 3x3 / 4x4 / 5x5`
+- 主题类型：动物、美女、运动、人物、Pokemon
+- 操作方式：键盘方向键、鼠标点击相邻块
+- 用户系统：注册、登录、验证码、密码 MD5 存储
+- 存档系统：按用户名保存与恢复游戏状态
 
-## 技术栈
+## 核心逻辑（算法与数据流）
 
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Java | 21 | 编程语言 |
-| Swing | - | GUI 框架 |
-| Maven | 3.6+ | 构建工具 |
-| Hutool | 5.8.43 | JSON/加密/文件操作 |
-| JUnit | 5.10.2 | 单元测试 |
+### 1) 棋盘状态建模
 
-## 项目结构
+拼图状态由以下核心数据组成：
+- `gridSize`：网格尺寸（2/3/4/5）
+- `board`：二维棋盘数组，`0` 表示空白块
+- `emptyX/emptyY`：空白块坐标
+- `stepCount`：当前步数
 
-```
-Game/
-├── src/main/java/
-│   ├── App.java                    # 程序入口
-│   ├── controller/
-│   │   ├── AuthController.java     # 用户认证
-│   │   └── SaveController.java     # 存档管理
-│   ├── model/
-│   │   ├── User.java               # 用户实体
-│   │   └── GameSave.java           # 存档实体
-│   ├── ui/
-│   │   ├── BaseFrame.java          # 窗口基类
-│   │   ├── LoginFrame.java         # 登录界面
-│   │   ├── RegisterFrame.java      # 注册界面
-│   │   ├── GameFrame.java          # 游戏主界面
-│   │   └── showDialog.java         # 对话框组件
-│   └── util/
-│       ├── ConfigUtil.java         # 配置管理
-│       ├── GetCodeUtil.java        # 验证码生成
-│       ├── ImageScanner.java       # 图片扫描
-│       ├── ImageUtil.java          # 图片处理
-│       ├── ResourcePathUtil.java   # 资源路径
-│       ├── SplitToolUI.java        # 图片切割工具界面
-│       └── splitUtil.java          # 图片切割核心
-├── src/main/resources/
-│   ├── config.properties           # 模式配置
-│   ├── config-dev.properties       # 开发环境配置
-│   ├── config-prod.properties      # 生产环境配置
-│   └── image/                      # 游戏图片资源
-├── src/main/data/
-│   ├── userinfo.json               # 用户数据
-│   └── save/                       # 存档目录
-└── pom.xml
-```
+这样建模的好处是：
+- 所有移动规则都围绕“空白块坐标 + 棋盘值交换”实现
+- UI 层只负责渲染 `board`，不直接处理业务细节
 
-## 快速开始
+### 2) 随机开局与可解性保障
 
-### 环境要求
-- JDK 21+
-- Maven 3.6+
+拼图并不是“随便打乱”就能玩。核心流程：
 
-### 运行方式
+1. 初始化数组 `[0 ... n-1]`
+2. 使用 `Fisher-Yates` 洗牌算法生成随机序列
+3. 转为二维棋盘并记录空白块位置
+4. 通过“逆序数规则”判断是否可解
+5. 若不可解则重新生成，直到可解
 
-**IDE 运行**
-```bash
-# 克隆项目后，使用 IDE 打开，运行 App.java
+关键点说明：
+- 奇数阶棋盘：逆序数为偶数才可解
+- 偶数阶棋盘：`逆序数 + 空白块自底向上行号` 为奇数才可解
+
+这一步保证玩家不会遇到“理论上无解”的死局。
+
+### 3) 移动规则（键盘/鼠标）
+
+#### 鼠标点击
+- 仅当点击块与空白块“曼哈顿距离为 1”时允许移动
+- 实质操作：交换点击块与空白块
+- 成功后步数 `+1`
+
+#### 键盘方向键
+- 按键映射为空白块移动目标坐标
+- 先做边界判断（越界则不移动）
+- 合法时交换并更新空白块坐标
+
+> 统一规则：所有可移动行为最终都转成“交换空白块与目标块”。
+
+### 4) 胜利判定
+
+目标状态是按行递增，最后一个格子为 `0`：
+
+```text
+1  2  3  ...
+...      ...
+n-1 0
 ```
 
-**命令行运行**
-```bash
-cd Game
-mvn clean package
-java -jar target/Game-1.0-SNAPSHOT.jar
+每次移动后进行判定：
+- 任意位置不匹配目标值 -> 未完成
+- 全部匹配 -> 游戏胜利
+
+### 5) 主题图片加载与缓存
+
+图片资源按以下规则组织：
+
+```text
+image/<theme>/<themeN>/<grid>x<grid>/
+  ├── 1.jpg ... k.jpg
+  └── all.jpg
 ```
 
-### 首次使用
-1. 启动后进入登录界面
-2. 点击"注册"创建账号（用户名 3-16 字符，密码 8-16 位含字母数字）
-3. 登录后选择难度和图片主题开始游戏
+加载流程：
+1. 扫描主题目录，得到可用图片编号列表
+2. 每次切换主题时按顺序取下一个编号（用完后重新打乱）
+3. 根据当前难度拼接路径并加载分块图
+4. 缺失图片时使用默认占位图，避免界面崩溃
 
-## 游戏操作
+### 6) 存档与读档数据流
 
-| 操作 | 功能 |
-|------|------|
-| 方向键 ↑↓←→ | 移动拼图块 |
-| 鼠标点击 | 点击相邻块移动 |
-| A 键 | 按住显示完整图片 |
-| W 键 | VIP 一键通关（仅 Narylr 账号） |
+#### 保存流程
+`当前局面 -> 组装 GameSave -> 序列化为 JSON -> 按用户名写文件`
 
-### 菜单功能
-- 更换图片（动物/美女/运动/人物）
-- 难度选择（2x2 ~ 5x5）
-- 保存/读取进度
-- 重新开始/重新登录
+存档字段包含：
+- 用户名
+- 网格大小
+- 棋盘状态
+- 空白块位置
+- 当前步数
+- 当前主题路径和图片编号
+- 保存时间
 
-## 核心算法
+#### 读取流程
+`按用户名读取 JSON -> 反序列化 GameSave -> 恢复局面与主题 -> 刷新 UI`
 
-### 拼图可解性验证
+### 7) 登录与注册校验流程
 
-基于逆序数理论判断拼图是否有解：
+#### 登录校验顺序
+1. 用户名非空
+2. 密码非空
+3. 验证码非空
+4. 验证码匹配
+5. 输入密码做 MD5
+6. 与用户数据比对
 
-```java
-private boolean isSolvable() {
-    int inversions = 0;
-    for (int i = 0; i < arr.length; i++) {
-        if (arr[i] == 0) continue;
-        for (int j = i + 1; j < arr.length; j++) {
-            if (arr[j] == 0) continue;
-            if (arr[i] > arr[j]) inversions++;
-        }
-    }
-    int blankRowFromBottom = gridSize - emptyX;
+#### 注册校验
+- 用户名格式与长度校验
+- 密码长度与复杂度校验
+- 两次密码一致性校验
+- 用户名唯一性校验
+- 通过后写入用户 JSON 数据
 
-    if (gridSize % 2 == 1) {
-        // 奇数网格：逆序数为偶数
-        return inversions % 2 == 0;
-    } else {
-        // 偶数网格：逆序数 + 空白行数为奇数
-        return (inversions + blankRowFromBottom) % 2 == 1;
-    }
-}
-```
+## 关键数据文件
 
-### Fisher-Yates 洗牌算法
+- 用户数据：`userinfo.json`
+- 存档目录：`save/{username}.json`
 
-保证打乱的随机性和均匀分布：
+示例存档：
 
-```java
-Random r = new Random();
-for (int i = arr.length - 1; i > 0; i--) {
-    int index = r.nextInt(i + 1);
-    int t = arr[i];
-    arr[i] = arr[index];
-    arr[index] = t;
-}
-```
-
-## 配置说明
-
-### 模式切换
-
-编辑 `config.properties`：
-
-```properties
-# dev = 开发模式（相对路径，IDE 调试）
-# prod = 生产模式（绝对路径，打包后运行）
-mode=dev
-```
-
-### 添加自定义图片
-
-1. 准备 420x420 像素的正方形图片
-2. 运行 `SplitToolUI` 切割工具
-3. 选择源图片，设置输出目录和文件夹名（如 `animal/animal1`）
-4. 选择需要的难度，点击切割
-
-切割规格：
-- 2x2：4 块，每块 210x210px
-- 3x3：9 块，每块 140x140px
-- 4x4：16 块，每块 105x105px
-- 5x5：25 块，每块 84x84px
-
-图片目录结构：
-```
-image/
-├── animal/
-│   ├── animal1/
-│   │   ├── 2x2/  (1.jpg ~ 4.jpg, all.jpg)
-│   │   ├── 3x3/  (1.jpg ~ 9.jpg, all.jpg)
-│   │   ├── 4x4/  (1.jpg ~ 16.jpg, all.jpg)
-│   │   └── 5x5/  (1.jpg ~ 25.jpg, all.jpg)
-│   └── animal2/
-├── girl/
-├── sport/
-└── person/
-```
-
-## 数据存储
-
-### 用户数据 (userinfo.json)
-```json
-[
-  {"username": "user1", "password": "md5_hash"}
-]
-```
-
-### 存档数据 (save/{username}.json)
 ```json
 {
   "username": "user1",
   "gridSize": 4,
-  "puzzleState": [[1,2,3,4], [5,6,7,8], [9,10,11,12], [13,14,15,0]],
+  "puzzleState": [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],
   "emptyX": 3,
   "emptyY": 3,
   "stepCount": 152,
@@ -215,30 +145,55 @@ image/
 }
 ```
 
-## 注意事项
+## 快速开始
 
-1. **图片资源**：发布版本需确保图片资源正确打包或与 JAR 同目录放置
-2. **存档兼容性**：不同难度的存档不通用，切换难度后需重新开始
-3. **文件权限**：生产环境需确保数据目录有读写权限
+### 环境要求
+- JDK 21+
+- Maven 3.6+
 
-## 学习要点
+### 本地运行
 
-本项目涵盖以下 Java 知识点：
+```bash
+cd Game
+mvn clean package
+java -jar target/Game-1.0-SNAPSHOT.jar
+```
 
-- Swing GUI 开发（JFrame、JPanel、JLabel、JMenu 等）
-- 事件处理（KeyListener、ActionListener、MouseListener）
-- MVC 分层架构
-- 文件 I/O 与 JSON 读写
-- MD5 加密
-- 洗牌算法与可解性验证
-- Maven 项目管理
-- 第三方库使用（Hutool）
-- 配置文件与资源路径管理
+也可在 IDE 直接运行 `Game/src/main/java/App.java`。
 
-## 开发者
+## 配置说明
+
+- `config.properties`：运行模式开关（`dev` / `prod`）
+- `config-dev.properties`：开发环境路径
+- `config-prod.properties`：生产环境路径（支持 `${APPDATA}`）
+
+路径解析逻辑会兼容从仓库根目录或 `Game` 子目录启动。
+
+## 项目结构
+
+```text
+Game/
+├── src/main/java/
+│   ├── controller/
+│   ├── model/
+│   │   ├── domain/
+│   │   ├── service/
+│   │   └── repository/
+│   │       └── json/
+│   ├── ui/
+│   └── util/
+├── src/test/java/
+└── pom.xml
+```
+
+## 技术栈
+
+- Java 21
+- Swing
+- Maven
+- Hutool 5.8.43
+- JUnit 5.10.2
+
+## 作者
 
 **Narylr**
-
----
-
-基于黑马程序员教学案例优化扩展
